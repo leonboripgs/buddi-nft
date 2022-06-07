@@ -1,0 +1,55 @@
+const BuddiCollection = artifacts.require("BuddiCollection");
+const BuddiNFT = artifacts.require("BuddiNFT");
+
+const truffleAssert = require('truffle-assertions');
+const assert = require('assert');
+
+const { ethers } = require('ethers');
+
+contract('Buddi NFT Contract', async (accounts) => {
+    let buddiCollection;
+    let buddiNFT;
+    beforeEach(async () => {
+        buddiCollection = await BuddiCollection.deployed();
+        buddiNFT = await BuddiNFT.deployed();
+    });
+
+    it("1-[BuddiNFT] sale not started yet", async () => {
+        await truffleAssert.fails(
+            buddiNFT.mintPassPurchase([3, 0, 1, 1, 2], {from: accounts[1]}),
+            truffleAssert.ErrorType.REVERT,
+            "The mint has not started yet"
+        );
+    });
+    it("2-[BuddiNFT] sale start", async () => {
+        await truffleAssert.passes(
+            buddiNFT.updateSaleStatus(true),
+            'ERROR: updating sales status failed'
+        );
+        let saleIsActive = await buddiNFT.saleIsActive();
+        assert.equal(saleIsActive, true);
+    });
+    it("3-[BuddiNFT] mintpass - fail with not enough passes", async () => {
+        var _mintPassesUsed = await buddiNFT._mintPassesUsed();
+
+        var passesLeft = await buddiCollection
+            .balanceOf(accounts[1], 0)
+            .sub(_mintPassesUsed[accounts[1]][0]);
+        console.log(passesLeft);
+
+        // currently type 0 nft only passes 3 but let's try with 4
+        // await truffleAssert.fails(
+        //     buddiNFT.mintPassPurchase([4, 0, 1, 1, 2], {from: accounts[1]}),
+        //     truffleAssert.ErrorType.REVERT,
+        //     "Not enough passes"
+        // );
+    });
+    it("[BuddiNFT] mintpass - success with enough passes", async () => {
+        await truffleAssert.passes(
+            buddiNFT.mintPassPurchase([3, 0, 1, 1, 2], {from: accounts[1]}),
+            "ERROR: mintpass failed"
+        );
+        var buddiCnt = await buddiNFT.balanceOf(accounts[1]);
+        assert.equal(buddiCnt, 7);
+    });
+})
