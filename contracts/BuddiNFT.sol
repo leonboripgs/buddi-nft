@@ -59,7 +59,6 @@ contract BuddiNFT is
     uint256 public constant MAX_SUPPLY_PER_DNA = 2000;
 
     bool public saleIsActive;
-    bool public signatureClaimIsActive;
     bool public metadataRevealed;
     bool public metadataFinalised;
 
@@ -98,7 +97,6 @@ contract BuddiNFT is
 
         BuddiCollection = IERC1155(_buddiCollection);
 
-        // keyHash = 0xAA77729D3466CA35AE8D28B3BBAC7CC36A5031EFDC430821C02BC31A238AF445;
         fee = 2 * 10**18;
 
         _buddiBaseURI = _baseURI;
@@ -146,36 +144,6 @@ contract BuddiNFT is
         }
 
         emit TokensMinted(_msgSender(), totalMintCount);
-    }
-
-    function signatureClaim(
-        uint256 tokensToMint,
-        uint256 nonce,
-        bytes calldata signature
-    ) public nonReentrant {
-        if (_msgSender() != owner())
-            require(signatureClaimIsActive, "The mint has not started yet");
-        require(
-            tokensToMint <= MAX_PER_TRANSACTION,
-            "You can mint max 50 tokens per transaction"
-        );
-        require(
-            totalSupply().add(tokensToMint) <= MAX_SUPPLY,
-            "Mint more creepz that allowed"
-        );
-
-        require(
-            _validateSignature(signature, tokensToMint, nonce, _msgSender()),
-            "Wrong data passed into the contract"
-        );
-        require(_usedNonces[_msgSender()] < nonce, "Already claimed");
-
-        _usedNonces[_msgSender()] = nonce;
-        for (uint256 i = 0; i < tokensToMint; i++) {
-            _safeMint(_msgSender(), totalSupply());
-        }
-
-        emit TokensMinted(_msgSender(), tokensToMint);
     }
 
     function _validateSignature(
@@ -230,18 +198,6 @@ contract BuddiNFT is
         saleIsActive = status;
     }
 
-    function updateSignatureClaimStatus(bool status) public onlyOwner {
-        signatureClaimIsActive = status;
-    }
-
-    // function setProvenanceHash(string memory provenanceHash) public onlyOwner {
-    //     require(
-    //         bytes(PROVENANCE_HASH).length == 0,
-    //         "Provenance hash has already been set"
-    //     );
-    //     PROVENANCE_HASH = provenanceHash;
-    // }
-
     function setBaseURI(string memory newBaseURI) public onlyOwner {
         require(!metadataFinalised, "Metadata already revealed");
 
@@ -249,21 +205,6 @@ contract BuddiNFT is
         _buddiBaseURI = newBaseURI;
         emit baseUriUpdated(currentURI, newBaseURI);
     }
-
-    // function finalizeStartingIndex() public onlyOwner returns (bytes32 requestId) {
-    //   require(startingIndex == 0, 'startingIndex already set');
-
-    //   require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK - fill contract with faucet");
-    //   return requestRandomness(keyHash, fee);
-    // }
-
-    // /**
-    //  * Callback function used by VRF Coordinator
-    //  */
-    // function fulfillRandomness(bytes32, uint256 randomness) internal override {
-    //     startingIndex = (randomness % MAX_SUPPLY);
-    //     emit startingIndexFinalized(startingIndex);
-    // }
 
     function tokenURI(uint256 tokenId)
         external
