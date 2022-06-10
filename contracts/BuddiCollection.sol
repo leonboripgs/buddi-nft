@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+/*
 ░██████╗███╗░░██╗██████╗░░█████╗░██████╗░██╗░░░██╗██████╗░████████╗░█████╗░░██████╗
 ██╔════╝████╗░██║██╔══██╗██╔══██╗██╔══██╗╚██╗░██╔╝██╔══██╗╚══██╔══╝██╔══██╗██╔════╝
 ╚█████╗░██╔██╗██║██████╔╝██║░░╚═╝██████╔╝░╚████╔╝░██████╔╝░░░██║░░░██║░░██║╚█████╗░
@@ -18,7 +19,8 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 ██╔══██╗██║░░░██║██║░░██║██║░░██║██║  ██║░░╚██╗██╔══██║██║╚██╔╝██║██╔══╝░░░╚═══██╗
 ██████╦╝╚██████╔╝██████╔╝██████╔╝██║  ╚██████╔╝██║░░██║██║░╚═╝░██║███████╗██████╔╝
 ╚═════╝░░╚═════╝░╚═════╝░╚═════╝░╚═╝  ░╚═════╝░╚═╝░░╚═╝╚═╝░░░░░╚═╝╚══════╝╚═════╝░
-                                                           
+*/
+
 contract BuddiCollection is ERC1155Supply, Ownable {
     using ECDSA for bytes32;
 
@@ -57,12 +59,10 @@ contract BuddiCollection is ERC1155Supply, Ownable {
       string memory _name,
       string memory _symbol,
       string memory _uri,
-      address _signer,
       address _royalty
     ) ERC1155(_uri) {
       name_ = _name;
       symbol_ = _symbol;
-      signerAddress = _signer;
       royaltyAddress = _royalty;
 
       tokenPrice = 0.05 ether;
@@ -102,7 +102,6 @@ contract BuddiCollection is ERC1155Supply, Ownable {
 
       if (_msgSender() != owner()) {
         require(_mintedPerAddress[_msgSender()] + totalPurchaseCount <= PER_WALLET_LIMIT, "You have hit the max tokens per wallet");
-        // require(_validateSignature(signature, _msgSender()), "Your wallet is not whitelisted");
         require(totalPurchaseCount * tokenPrice == msg.value,
           "You have not sent enough ETH"
         );
@@ -114,18 +113,6 @@ contract BuddiCollection is ERC1155Supply, Ownable {
       }
 
       emit TokensMinted(_msgSender(), totalPurchaseCount);
-    }
-
-    function checkIfWhitelisted(bytes calldata signature, address caller) public view returns (bool) {
-        return (_validateSignature(signature, caller));
-    }
-
-    function _validateSignature(bytes calldata signature, address caller) internal view returns (bool) {
-      bytes32 dataHash = keccak256(abi.encodePacked(caller));
-      bytes32 message = ECDSA.toEthSignedMessageHash(dataHash);
-
-      address receivedAddress = ECDSA.recover(message, signature);
-      return (receivedAddress != address(0) && receivedAddress == signerAddress);
     }
 
     function updateSaleStatus(bool status) public onlyOwner {

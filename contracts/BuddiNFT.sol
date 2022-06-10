@@ -4,7 +4,6 @@ pragma solidity ^0.8.7;
 
 import "./utils/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-// import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -12,6 +11,7 @@ import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+/*
 ░██████╗███╗░░██╗██████╗░░█████╗░██████╗░██╗░░░██╗██████╗░████████╗░█████╗░░██████╗
 ██╔════╝████╗░██║██╔══██╗██╔══██╗██╔══██╗╚██╗░██╔╝██╔══██╗╚══██╔══╝██╔══██╗██╔════╝
 ╚█████╗░██╔██╗██║██████╔╝██║░░╚═╝██████╔╝░╚████╔╝░██████╔╝░░░██║░░░██║░░██║╚█████╗░
@@ -26,7 +26,6 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 ██████╦╝╚██████╔╝██████╔╝██████╔╝██║  ╚██████╔╝██║░░██║██║░╚═╝░██║███████╗██████╔╝
 ╚═════╝░░╚═════╝░╚═════╝░╚═════╝░╚═╝  ░╚═════╝░╚═╝░░╚═╝╚═╝░░░░░╚═╝╚══════╝╚═════╝░
 
-/**
  * @dev Implementation of https://eips.ethereum.org/EIPS/eip-721[ERC721] Non-Fungible Token Standard, including
  * the Metadata extension, but not including the Enumerable extension, which is available separately as
  * {ERC721Enumerable}.
@@ -63,7 +62,6 @@ contract BuddiNFT is
     bool public metadataFinalised;
 
     // Royalty info
-    address public signerAddress;
     address public royaltyAddress;
     uint256 public ROYALTY_SIZE = 750;
     uint256 public ROYALTY_DENOMINATOR = 10000;
@@ -88,12 +86,10 @@ contract BuddiNFT is
 
     constructor(
         address _royaltyAddress,
-        address _signerAddress,
         address _buddiCollection,
         string memory _baseURI
     ) ERC721("Buddi Runner", "BUD") {
         royaltyAddress = _royaltyAddress;
-        signerAddress = _signerAddress;
 
         BuddiCollection = IERC1155(_buddiCollection);
 
@@ -144,35 +140,6 @@ contract BuddiNFT is
         }
 
         emit TokensMinted(_msgSender(), totalMintCount);
-    }
-
-    function _validateSignature(
-        bytes calldata signature,
-        uint256 tokensToMint,
-        uint256 nonce,
-        address caller
-    ) internal view returns (bool) {
-        bytes32 dataHash = keccak256(
-            abi.encodePacked(tokensToMint, nonce, caller)
-        );
-        bytes32 message = ECDSA.toEthSignedMessageHash(dataHash);
-
-        address receivedAddress = ECDSA.recover(message, signature);
-        return (receivedAddress != address(0) &&
-            receivedAddress == signerAddress);
-    }
-
-    function emergencyMint(uint256 tokensToMint) public onlyOwner {
-        require(
-            totalSupply().add(tokensToMint) <= MAX_SUPPLY,
-            "Mint more creepz that allowed"
-        );
-
-        for (uint256 i = 0; i < tokensToMint; i++) {
-            _safeMint(_msgSender(), totalSupply());
-        }
-
-        emit TokensMinted(_msgSender(), tokensToMint);
     }
 
     function royaltyInfo(uint256 _tokenId, uint256 _salePrice)
